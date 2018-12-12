@@ -7,11 +7,14 @@ PACKAGES_DYNAMIC = ""
 STAGINGCC = "gcc-cross-initial-${TARGET_ARCH}"
 STAGINGCC_class-nativesdk = "gcc-crosssdk-initial-${SDK_SYS}"
 
+HOST_SYS = "${@ "i686-linux" if d.getVar('MLPREFIX') == 'lib32-' else "x86_64-linux" }"
+#EXTRA_OEMAKE = "${@ "CFLAGS+='-march=i386'" if d.getVar('MLPREFIX') == 'lib32-' else "" }"
+
 do_configure () {
 	(cd ${S} && gnu-configize) || die "failure in running gnu-configize"
 	find ${S} -name "configure" | xargs touch
 	cfgscript=`python3 -c "import os; print(os.path.relpath('${S}', '.'))"`/configure
-	$cfgscript --host=${TARGET_SYS} --build=${BUILD_SYS} \
+	$cfgscript --host=${HOST_SYS} --build=${BUILD_SYS} \
 		--prefix=/usr \
 		--without-cvs --disable-sanity-checks \
 		--with-headers=${STAGING_DIR_TARGET}${includedir} \

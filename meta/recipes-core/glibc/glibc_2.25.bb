@@ -72,7 +72,10 @@ GLIBC_BROKEN_LOCALES = ""
 COMPATIBLE_HOST_libc-musl_class-target = "null"
 COMPATIBLE_HOST_libc-uclibc_class-target = "null"
 
-EXTRA_OECONF = "--enable-kernel=${OLDEST_KERNEL} \
+HOST_SYS = "${@ "i686-linux" if d.getVar('MLPREFIX') == 'lib32-' else "x86_64-linux" }"
+
+EXTRA_OECONF = "--host=${HOST_SYS} \
+                --enable-kernel=${OLDEST_KERNEL} \
                 --without-cvs --disable-profile \
                 --disable-debug --without-gd \
                 --enable-clocale=gnu \
@@ -85,6 +88,10 @@ EXTRA_OECONF = "--enable-kernel=${OLDEST_KERNEL} \
 EXTRA_OECONF += "${@get_libc_fpu_setting(bb, d)}"
 EXTRA_OECONF += "${@bb.utils.contains('DISTRO_FEATURES', 'libc-inet-anl', '--enable-nscd', '--disable-nscd', d)}"
 
+#FIXME
+do_package_qa() {
+    :
+}
 
 do_patch_append() {
     bb.build.exec_func('do_fix_readlib_c', d)
@@ -101,7 +108,18 @@ do_configure () {
 # version check and doesn't really help with anything
         (cd ${S} && gnu-configize) || die "failure in running gnu-configize"
         find ${S} -name "configure" | xargs touch
-        CPPFLAGS="" oe_runconf
+
+        if [ "${MLPREFIX}" == "lib32" ]; then
+            CC="gcc -m32"
+            CXX="g++ -m32" \
+            CFLAGS="-O2 -march=i686" \
+            CXXFLAGS="-O2 -march=i686" \
+            CPPFLAGS="" \
+            oe_runconf
+
+        else
+            CPPFLAGS="" oe_runconf
+        fi
 }
 
 rpcsvc = "bootparam_prot.x nlm_prot.x rstat.x \
